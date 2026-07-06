@@ -259,8 +259,11 @@ export default function DefinitionReveal({
         {/* Close button */}
         {onClose && (
           <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-clay-empty/50 text-walnut-muted hover:text-walnut-text transition-colors cursor-pointer"
+            onClick={() => {
+              soundEngine.playTick();
+              onClose();
+            }}
+            className="absolute top-4 right-4 p-1 rounded-full hover:bg-clay-empty/50 text-walnut-muted hover:text-walnut-text transition-colors cursor-pointer z-10"
             title="Close summary overlay"
           >
             <X className="w-5 h-5" />
@@ -268,7 +271,7 @@ export default function DefinitionReveal({
         )}
 
         {/* Dynamic Backdrop glow decoration */}
-        <div className={`absolute -right-12 -top-12 w-28 h-28 rounded-full blur-2xl opacity-15 ${
+        <div className={`absolute -right-12 -top-12 w-28 h-28 rounded-full blur-2xl opacity-15 pointer-events-none ${
           isWon ? 'bg-moss-correct' : 'bg-ochre-present'
         }`} />
 
