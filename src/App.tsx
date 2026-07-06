@@ -20,7 +20,8 @@ import {
   Layers,
   Calendar,
   Sun,
-  Moon
+  Moon,
+  Sparkles
 } from 'lucide-react';
 
 import { PlayerStats, GameState, VocabularyWord } from './types';
@@ -32,6 +33,7 @@ import StatsModal from './components/StatsModal';
 import LevelSelectorModal from './components/LevelSelectorModal';
 import DefinitionReveal from './components/DefinitionReveal';
 import EarthyConfetti from './components/EarthyConfetti';
+import HintModal from './components/HintModal';
 import { VALID_GUESS_SET_BY_LENGTH } from './data/vocabulary';
 
 // Daily Puzzle helpers
@@ -43,7 +45,7 @@ export function getTodayDateString(): string {
   return `${year}-${month}-${day}`;
 }
 
-export function getDailyLevelNumber(): number {
+export function getDailyLevelNumber(wordLength: number = 5): number {
   const dateStr = getTodayDateString();
   
   // Deterministic seed hashing
@@ -52,9 +54,17 @@ export function getDailyLevelNumber(): number {
     hash = dateStr.charCodeAt(i) + ((hash << 5) - hash);
   }
   
-  // Level is selected deterministically between 1 and 10000 (covers all lengths)
-  const level = Math.abs(hash % 10000) + 1;
-  return level;
+  // Determine different level boundaries per word length
+  if (wordLength === 4) {
+    return Math.abs(hash % 2000) + 1;
+  } else if (wordLength === 6) {
+    return Math.abs(hash % 2500) + 6001;
+  } else if (wordLength === 7) {
+    return Math.abs(hash % 1500) + 8501;
+  } else {
+    // Default or 5 letters
+    return Math.abs(hash % 4000) + 2001;
+  }
 }
 
 // Initial stats template
@@ -197,6 +207,11 @@ export default function App() {
     return localStorage.getItem('rustic_wordle_mode') === 'daily';
   });
 
+  const [dailyWordLength, setDailyWordLength] = useState<number>(() => {
+    const saved = localStorage.getItem('rustic_wordle_daily_word_length');
+    return saved ? parseInt(saved, 10) : 5;
+  });
+
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('rustic_wordle_dark_mode') === 'true';
   });
@@ -234,6 +249,7 @@ export default function App() {
   // Dialog Overlays
   const [showHelp, setShowHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showHintModal, setShowHintModal] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync sound engine toggle with user settings
@@ -285,8 +301,26 @@ export default function App() {
 
     if (isDaily) {
       const todayStr = getTodayDateString();
-      const savedGuesses = localStorage.getItem(`rustic_wordle_daily_guesses_${todayStr}`);
-      const savedStatus = localStorage.getItem(`rustic_wordle_daily_status_${todayStr}`);
+      let savedGuesses = localStorage.getItem(`rustic_wordle_daily_guesses_${todayStr}_len_${wordData.word.length}`);
+      let savedStatus = localStorage.getItem(`rustic_wordle_daily_status_${todayStr}_len_${wordData.word.length}`);
+      
+      // Fallback for 5-letter word backward compatibility
+      if (wordData.word.length === 5) {
+        if (!savedGuesses) {
+          const unsegmentedGuesses = localStorage.getItem(`rustic_wordle_daily_guesses_${todayStr}`);
+          if (unsegmentedGuesses) {
+            try {
+              const parsed = JSON.parse(unsegmentedGuesses);
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].length === 5) {
+                savedGuesses = unsegmentedGuesses;
+              }
+            } catch (e) {}
+          }
+        }
+        if (!savedStatus && savedGuesses) {
+          savedStatus = localStorage.getItem(`rustic_wordle_daily_status_${todayStr}`);
+        }
+      }
       
       if (savedGuesses) {
         try {
@@ -295,7 +329,7 @@ export default function App() {
       }
       if (savedStatus === 'WON' || savedStatus === 'LOST' || savedStatus === 'IN_PROGRESS') {
         initialStatus = savedStatus;
-        initialShowDefinition = savedStatus !== 'IN_PROGRESS';
+        initialShowDefinition = false; // Stop sudden pop up when daily puzzle section is loaded or switched
       }
     }
 
@@ -314,13 +348,14 @@ export default function App() {
       hintUsed: false,
       errorShakeRowIndex: null
     });
+    setShowHintModal(false);
   }, []);
 
-  // Sync level content whenever activeLevelNum or isDailyMode changes
+  // Sync level content whenever activeLevelNum, dailyWordLength, or isDailyMode changes
   useEffect(() => {
-    const activeLevelNum = isDailyMode ? getDailyLevelNumber() : levelNumber;
+    const activeLevelNum = isDailyMode ? getDailyLevelNumber(dailyWordLength) : levelNumber;
     loadLevel(activeLevelNum, isDailyMode);
-  }, [levelNumber, isDailyMode, loadLevel]);
+  }, [levelNumber, isDailyMode, dailyWordLength, loadLevel]);
 
   const handleSetMode = (toDaily: boolean) => {
     soundEngine.playTick();
@@ -452,11 +487,22 @@ export default function App() {
 
       if (isDailyMode) {
         const todayStr = getTodayDateString();
-        localStorage.setItem(`rustic_wordle_daily_guesses_${todayStr}`, JSON.stringify(updatedGuesses));
-        localStorage.setItem(`rustic_wordle_daily_status_${todayStr}`, nextStatus);
-        localStorage.setItem(`rustic_wordle_daily_hint_${todayStr}`, String(prev.hintUsed));
+        const suffix = `_len_${wordLength}`;
+        localStorage.setItem(`rustic_wordle_daily_guesses_${todayStr}${suffix}`, JSON.stringify(updatedGuesses));
+        localStorage.setItem(`rustic_wordle_daily_status_${todayStr}${suffix}`, nextStatus);
+        localStorage.setItem(`rustic_wordle_daily_hint_${todayStr}${suffix}`, String(prev.hintUsed));
         if (nextStatus === 'WON') {
-          localStorage.setItem(`rustic_wordle_daily_solved_${todayStr}`, 'true');
+          localStorage.setItem(`rustic_wordle_daily_solved_${todayStr}${suffix}`, 'true');
+        }
+
+        // Keep non-segmented keys for 5-letter words backward compatibility
+        if (wordLength === 5) {
+          localStorage.setItem(`rustic_wordle_daily_guesses_${todayStr}`, JSON.stringify(updatedGuesses));
+          localStorage.setItem(`rustic_wordle_daily_status_${todayStr}`, nextStatus);
+          localStorage.setItem(`rustic_wordle_daily_hint_${todayStr}`, String(prev.hintUsed));
+          if (nextStatus === 'WON') {
+            localStorage.setItem(`rustic_wordle_daily_solved_${todayStr}`, 'true');
+          }
         }
       }
 
@@ -568,7 +614,7 @@ export default function App() {
       }
     }
 
-  }, [gameState, strictValidation, isValidating, levelNumber]);
+  }, [gameState, strictValidation, isValidating, levelNumber, isDailyMode, dailyWordLength]);
 
   // Handle desktop physical keyboard layout
   useEffect(() => {
@@ -603,11 +649,31 @@ export default function App() {
   ]);
 
   const handleNextLevel = () => {
-    if (gameState.gameStatus === 'WON') {
-      setLevelNumber((prev) => prev + 1);
+    if (isDailyMode) {
+      const activeLevelNum = getDailyLevelNumber(dailyWordLength);
+      // Clear current daily guesses & status to retry
+      const todayStr = getTodayDateString();
+      const suffix = `_len_${gameState.wordLength}`;
+      localStorage.removeItem(`rustic_wordle_daily_guesses_${todayStr}${suffix}`);
+      localStorage.removeItem(`rustic_wordle_daily_status_${todayStr}${suffix}`);
+      localStorage.removeItem(`rustic_wordle_daily_hint_${todayStr}${suffix}`);
+      localStorage.removeItem(`rustic_wordle_daily_solved_${todayStr}${suffix}`);
+      
+      if (gameState.wordLength === 5) {
+        localStorage.removeItem(`rustic_wordle_daily_guesses_${todayStr}`);
+        localStorage.removeItem(`rustic_wordle_daily_status_${todayStr}`);
+        localStorage.removeItem(`rustic_wordle_daily_hint_${todayStr}`);
+        localStorage.removeItem(`rustic_wordle_daily_solved_${todayStr}`);
+      }
+
+      loadLevel(activeLevelNum, true);
     } else {
-      // Re-evaluate level if they lost
-      loadLevel(levelNumber);
+      if (gameState.gameStatus === 'WON') {
+        setLevelNumber((prev) => prev + 1);
+      } else {
+        // Re-evaluate level if they lost
+        loadLevel(levelNumber, false);
+      }
     }
   };
 
@@ -642,6 +708,17 @@ export default function App() {
 
   const handleSelectWordLength = (len: number) => {
     soundEngine.playTick();
+    if (isDailyMode) {
+      if (dailyWordLength === len) {
+        triggerToast(`Already playing the ${len}-letter Daily Puzzle`);
+        return;
+      }
+      setDailyWordLength(len);
+      localStorage.setItem('rustic_wordle_daily_word_length', String(len));
+      triggerToast(`Switched to ${len}-letter Daily Puzzle`);
+      return;
+    }
+
     // Find level range
     let targetMin = 1;
     let targetMax = 2000;
@@ -694,7 +771,26 @@ export default function App() {
   const displayLevel = levelNumber - (gameState.wordLength === 4 ? 0 : gameState.wordLength === 5 ? 2000 : gameState.wordLength === 6 ? 6000 : 8500);
 
   const todayStr = getTodayDateString();
-  const isTodaySolved = localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}`) === 'true';
+  const isTodaySolved = (() => {
+    const lenSuffix = `_len_${gameState.wordLength}`;
+    const lenSolved = localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}${lenSuffix}`);
+    if (lenSolved !== null) {
+      return lenSolved === 'true';
+    }
+    // Backward compatibility fallback for 5-letter puzzles
+    if (gameState.wordLength === 5) {
+      const unsegmentedGuesses = localStorage.getItem(`rustic_wordle_daily_guesses_${todayStr}`);
+      if (unsegmentedGuesses) {
+        try {
+          const parsed = JSON.parse(unsegmentedGuesses);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].length === 5) {
+            return localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}`) === 'true';
+          }
+        } catch (e) {}
+      }
+    }
+    return false;
+  })();
 
   return (
     <div className="h-screen h-[100dvh] w-full flex flex-col justify-between bg-linen-bg text-walnut-text selection:bg-moss-correct/10 selection:text-moss-correct font-sans transition-colors duration-300 overflow-hidden select-none">
@@ -825,25 +921,73 @@ export default function App() {
           </div>
 
           {isDailyMode ? (
-            /* Daily Challenge Date Panel */
-            <div className="flex items-center justify-between px-4 py-2 mb-1.5 sm:mb-2 bg-linen-card/65 border border-clay-border/40 rounded-2xl shrink-0 max-w-sm mx-auto w-full animate-fade-in-up">
-              <div className="flex flex-col">
-                <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-walnut-muted">
-                  Today's Challenge
-                </span>
-                <span className="text-xs font-bold font-serif text-walnut-text">
-                  {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
+            /* Daily Challenge Date Panel & Word Length Selector */
+            <div className="flex flex-col gap-1.5 max-w-sm mx-auto w-full shrink-0">
+              <div className="flex items-center justify-between px-4 py-2 bg-linen-card/65 border border-clay-border/40 rounded-2xl animate-fade-in-up">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-walnut-muted">
+                    Today's Challenge
+                  </span>
+                  <span className="text-xs font-bold font-serif text-walnut-text">
+                    {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+                </div>
+                {isTodaySolved ? (
+                  <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
+                    🏆 Solved
+                  </span>
+                ) : (
+                  <span className="bg-clay-empty/40 border border-clay-border/60 text-[10px] font-bold text-walnut-muted px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                    Unsolved
+                  </span>
+                )}
               </div>
-              {isTodaySolved ? (
-                <span className="bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                  🏆 Solved
+
+              {/* Daily Word Length Selector */}
+              <div className="flex items-center justify-between px-2 py-1 bg-linen-card/65 border border-clay-border/40 rounded-xl animate-fade-in-up">
+                <span className="text-[10px] font-mono font-bold tracking-wider text-walnut-muted uppercase pl-2">
+                  Daily Length:
                 </span>
-              ) : (
-                <span className="bg-clay-empty/40 border border-clay-border/60 text-[10px] font-bold text-walnut-muted px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
-                  Unsolved
-                </span>
-              )}
+                <div className="flex items-center gap-1.5">
+                  {[4, 5, 6, 7].map((len) => {
+                    const isActive = gameState.wordLength === len;
+                    // Check if solved for this specific length
+                    const isLenSolved = (() => {
+                      const lenSuffix = `_len_${len}`;
+                      const lenSolved = localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}${lenSuffix}`);
+                      if (lenSolved !== null) return lenSolved === 'true';
+                      if (len === 5) {
+                        const unsegmentedGuesses = localStorage.getItem(`rustic_wordle_daily_guesses_${todayStr}`);
+                        if (unsegmentedGuesses) {
+                          try {
+                            const parsed = JSON.parse(unsegmentedGuesses);
+                            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].length === 5) {
+                              return localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}`) === 'true';
+                            }
+                          } catch (e) {}
+                        }
+                      }
+                      return false;
+                    })();
+
+                    return (
+                      <button
+                        key={len}
+                        onClick={() => handleSelectWordLength(len)}
+                        className={`px-3 py-1 text-xs font-mono font-bold rounded-lg transition-all border cursor-pointer flex items-center gap-1 ${
+                          isActive
+                            ? 'bg-amber-500 text-linen-bg border-amber-500 shadow-xs'
+                            : 'bg-linen-bg text-walnut-text border-clay-border/60 hover:bg-clay-empty/40'
+                        }`}
+                        title={`Switch to ${len}-letter daily puzzle`}
+                      >
+                        {len}L
+                        {isLenSolved && <span className="text-[10px]">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           ) : (
             /* Quick Word Length Selector & Level Browser */
@@ -948,6 +1092,22 @@ export default function App() {
               className="w-full py-1.5 sm:py-2 px-4 bg-moss-correct text-linen-bg hover:bg-moss-correct/90 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer animate-pulse"
             >
               🏆 View Level Definition & Next Steps
+            </button>
+          )}
+
+          {/* Hint Option: Available only after 5 unsuccessful tries */}
+          {gameState.gameStatus === 'IN_PROGRESS' && gameState.guesses.length >= 5 && (
+            <button
+              onClick={() => {
+                soundEngine.playReveal();
+                setGameState(prev => ({ ...prev, hintUsed: true }));
+                setShowHintModal(true);
+              }}
+              className="w-full py-1.5 sm:py-2 px-4 bg-ochre-present text-linen-bg hover:bg-ochre-present/90 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer animate-pulse border border-clay-border/40"
+              id="game-hint-button"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              💡 Seek Nature's Whisper Hint (5/6 Tries Life-Line)
             </button>
           )}
 
@@ -1209,6 +1369,15 @@ export default function App() {
         maxUnlockedLevels={maxUnlockedLevels}
         onSelectLevel={(levelNum) => setLevelNumber(levelNum)}
       />
+
+      {/* Dialog: Nature's Whisper Clue Modal */}
+      {showHintModal && (
+        <HintModal
+          word={gameState.targetWord}
+          guesses={gameState.guesses}
+          onClose={() => setShowHintModal(false)}
+        />
+      )}
 
     </div>
   );

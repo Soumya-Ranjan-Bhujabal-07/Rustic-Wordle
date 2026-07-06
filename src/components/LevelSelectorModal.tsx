@@ -15,6 +15,7 @@ import {
   Layers, 
   Sparkles 
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { soundEngine } from '../utils/AudioSynth';
 
 interface LevelSelectorModalProps {
@@ -126,9 +127,17 @@ export default function LevelSelectorModal({
   const currentTabMaxUnlockedDisplay = currentTabMaxUnlocked - currentTab.base;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in-up">
-      <div 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs"
+    >
+      <motion.div 
         id="level-selector-card"
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.05 }}
         className="relative w-full max-w-xl overflow-hidden rounded-2xl bg-linen-bg border border-clay-border shadow-2xl p-6 text-walnut-text flex flex-col max-h-[85vh]"
       >
         {/* Header */}
@@ -267,8 +276,8 @@ export default function LevelSelectorModal({
             Jump to Furthest
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

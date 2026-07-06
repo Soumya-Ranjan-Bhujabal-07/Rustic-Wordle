@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Volume2, ChevronRight, BookOpen, X, ChevronDown, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { soundEngine } from '../utils/AudioSynth';
 
 interface DefinitionRevealProps {
@@ -250,12 +251,22 @@ export default function DefinitionReveal({
   const isWon = gameStatus === 'WON';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in">
-      <div className={`w-full max-w-md rounded-2xl border p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] relative ${
-        isWon 
-          ? 'bg-linen-bg border-moss-correct/30 text-walnut-text' 
-          : 'bg-linen-bg border-ochre-present/30 text-walnut-text'
-      }`}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.05 }}
+        className={`w-full max-w-md rounded-2xl border p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] relative ${
+          isWon 
+            ? 'bg-linen-bg border-moss-correct/30 text-walnut-text' 
+            : 'bg-linen-bg border-ochre-present/30 text-walnut-text'
+        }`}
+      >
         {/* Close button */}
         {onClose && (
           <button
@@ -344,9 +355,16 @@ export default function DefinitionReveal({
             <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showLearnMore ? 'rotate-180' : ''}`} />
           </button>
 
-          {showLearnMore && (
-            <div className="mt-3 text-xs leading-relaxed text-walnut-text/85 font-serif bg-clay-empty/35 border border-clay-border/30 rounded-xl p-3.5 animate-fade-in-up">
-              {etymologyInfo?.loading ? (
+          <AnimatePresence>
+            {showLearnMore && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, scale: 0.98 }}
+                animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                exit={{ opacity: 0, height: 0, scale: 0.98 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-3 text-xs leading-relaxed text-walnut-text/85 font-serif bg-clay-empty/35 border border-clay-border/30 rounded-xl p-3.5 overflow-hidden origin-top"
+              >
+                {etymologyInfo?.loading ? (
                 <div className="flex flex-col items-center justify-center py-4 gap-2">
                   <div className="w-5 h-5 rounded-full border-2 border-clay-border border-t-walnut-text animate-spin" />
                   <span className="text-[10px] font-mono text-walnut-muted uppercase font-bold tracking-wider animate-pulse">
@@ -402,8 +420,9 @@ export default function DefinitionReveal({
                   )}
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
 
         {/* Buttons Action Group */}
@@ -428,7 +447,7 @@ export default function DefinitionReveal({
             <ChevronRight className="w-5 h-5 animate-pulse" />
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
