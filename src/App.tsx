@@ -784,7 +784,9 @@ export default function App() {
         try {
           const parsed = JSON.parse(unsegmentedGuesses);
           if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].length === 5) {
-            return localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}`) === 'true';
+            // Check unsegmented status directly to prevent crossover issues from other length daily puzzles
+            const unsegmentedStatus = localStorage.getItem(`rustic_wordle_daily_status_${todayStr}`);
+            return unsegmentedStatus === 'WON';
           }
         } catch (e) {}
       }
@@ -962,7 +964,9 @@ export default function App() {
                           try {
                             const parsed = JSON.parse(unsegmentedGuesses);
                             if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].length === 5) {
-                              return localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}`) === 'true';
+                              // Check unsegmented status directly to prevent crossover issues from other length daily puzzles
+                              const unsegmentedStatus = localStorage.getItem(`rustic_wordle_daily_status_${todayStr}`);
+                              return unsegmentedStatus === 'WON';
                             }
                           } catch (e) {}
                         }
