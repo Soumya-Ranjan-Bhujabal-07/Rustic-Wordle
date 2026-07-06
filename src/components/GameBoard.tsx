@@ -27,11 +27,25 @@ export default function GameBoard({
   const maxGuesses = 6;
   const rows = Array(maxGuesses).fill(null);
 
+  const getMaxWidthClass = () => {
+    switch (wordLength) {
+      case 4:
+        return 'max-w-[160px] sm:max-w-[200px]';
+      case 5:
+        return 'max-w-[200px] sm:max-w-[245px]';
+      case 6:
+        return 'max-w-[240px] sm:max-w-[290px]';
+      case 7:
+      default:
+        return 'max-w-[280px] sm:max-w-[335px]';
+    }
+  };
+
   return (
-    <div className="w-full flex justify-center py-4 px-2 my-auto">
+    <div className="w-full flex justify-center py-0.5 sm:py-1 px-2 my-auto">
       <div 
         id="wordle-board-matrix"
-        className="flex flex-col gap-2 w-full max-w-sm"
+        className={`flex flex-col gap-1 sm:gap-1.2 w-full ${getMaxWidthClass()}`}
       >
         {rows.map((_, rowIndex) => {
           const isGuessedRow = rowIndex < guesses.length;
@@ -63,7 +77,7 @@ export default function GameBoard({
             <div 
               key={rowIndex}
               id={`board-row-${rowIndex}`}
-              className={`grid gap-2 justify-center ${shouldShake ? 'animate-shake' : ''}`}
+              className={`grid gap-1 sm:gap-1.2 justify-center ${shouldShake ? 'animate-shake' : ''}`}
               style={{
                 gridTemplateColumns: `repeat(${wordLength}, minmax(0, 1fr))`,
               }}
@@ -107,8 +121,8 @@ export default function GameBoard({
                     id={`tile-row-${rowIndex}-col-${charIndex}`}
                     style={customStyle}
                     className={`
-                      aspect-square w-full flex items-center justify-center 
-                      text-lg sm:text-2xl font-bold rounded-lg border-2 uppercase select-none font-sans
+                      h-[4.8vh] sm:h-[5.2vh] md:h-[5.5vh] max-h-[36px] sm:max-h-[42px] md:max-h-[48px] aspect-square w-auto mx-auto flex items-center justify-center 
+                      text-xs sm:text-base md:text-lg font-bold rounded-md sm:rounded-lg border-[1.5px] sm:border-2 uppercase select-none font-sans
                       transition-all duration-300
                       ${baseBgBorderText}
                       ${animationClass}

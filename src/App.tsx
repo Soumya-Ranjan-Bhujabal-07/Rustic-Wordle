@@ -9,7 +9,6 @@ import {
   HelpCircle, 
   Volume2, 
   VolumeX, 
-  Lightbulb, 
   Wifi, 
   Check, 
   X, 
@@ -235,7 +234,6 @@ export default function App() {
   // Dialog Overlays
   const [showHelp, setShowHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [hintDrawerOpen, setHintDrawerOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Sync sound engine toggle with user settings
@@ -283,14 +281,12 @@ export default function App() {
     
     let initialGuesses: string[] = [];
     let initialStatus: 'IN_PROGRESS' | 'WON' | 'LOST' = 'IN_PROGRESS';
-    let initialHintUsed = false;
     let initialShowDefinition = false;
 
     if (isDaily) {
       const todayStr = getTodayDateString();
       const savedGuesses = localStorage.getItem(`rustic_wordle_daily_guesses_${todayStr}`);
       const savedStatus = localStorage.getItem(`rustic_wordle_daily_status_${todayStr}`);
-      const savedHint = localStorage.getItem(`rustic_wordle_daily_hint_${todayStr}`);
       
       if (savedGuesses) {
         try {
@@ -300,9 +296,6 @@ export default function App() {
       if (savedStatus === 'WON' || savedStatus === 'LOST' || savedStatus === 'IN_PROGRESS') {
         initialStatus = savedStatus;
         initialShowDefinition = savedStatus !== 'IN_PROGRESS';
-      }
-      if (savedHint === 'true') {
-        initialHintUsed = true;
       }
     }
 
@@ -318,10 +311,9 @@ export default function App() {
       gameStatus: initialStatus,
       showStats: false,
       showDefinition: initialShowDefinition,
-      hintUsed: initialHintUsed,
+      hintUsed: false,
       errorShakeRowIndex: null
     });
-    setHintDrawerOpen(false);
   }, []);
 
   // Sync level content whenever activeLevelNum or isDailyMode changes
@@ -699,33 +691,19 @@ export default function App() {
   // Key matching map for Virtual Keyboard styling
   const keyStatuses = getKeyboardKeyStatuses(gameState.guesses, gameState.targetWord);
 
-  // Helper to obscure the target word in hints to prevent spoiler letters
-  const getObscuredDefinition = () => {
-    const wordRegex = new RegExp(gameState.targetWord, 'gi');
-    return gameState.definition.replace(wordRegex, '______');
-  };
-
-  const handleToggleHint = () => {
-    soundEngine.playReveal();
-    setHintDrawerOpen(!hintDrawerOpen);
-    if (!gameState.hintUsed) {
-      setGameState(prev => ({ ...prev, hintUsed: true }));
-    }
-  };
-
   const displayLevel = levelNumber - (gameState.wordLength === 4 ? 0 : gameState.wordLength === 5 ? 2000 : gameState.wordLength === 6 ? 6000 : 8500);
 
   const todayStr = getTodayDateString();
   const isTodaySolved = localStorage.getItem(`rustic_wordle_daily_solved_${todayStr}`) === 'true';
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between bg-linen-bg text-walnut-text selection:bg-moss-correct/10 selection:text-moss-correct font-sans transition-colors duration-300">
+    <div className="h-screen h-[100dvh] w-full flex flex-col justify-between bg-linen-bg text-walnut-text selection:bg-moss-correct/10 selection:text-moss-correct font-sans transition-colors duration-300 overflow-hidden select-none">
       
       {/* Earthy Falling Petals win animation */}
       {gameState.gameStatus === 'WON' && <EarthyConfetti />}
 
       {/* Upper Navigation Rail */}
-      <header className="border-b border-clay-border/50 py-3 px-4 bg-linen-card/40 backdrop-blur-xs sticky top-0 z-35 shadow-xs transition-colors">
+      <header className="border-b border-clay-border/50 py-2 sm:py-2.5 px-3 sm:px-4 bg-linen-card/40 backdrop-blur-xs sticky top-0 z-35 shadow-xs transition-colors">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           
           {/* Brand Logo & Level Track */}
@@ -764,22 +742,6 @@ export default function App() {
               title={isDarkMode ? 'Switch to Light Wood theme' : 'Switch to Grayish Slate theme'}
             >
               {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-walnut-muted" />}
-            </button>
-
-            {/* Hint Light */}
-            <button
-              onClick={handleToggleHint}
-              className={`p-2.5 rounded-xl border transition-all relative cursor-pointer ${
-                hintDrawerOpen 
-                  ? 'bg-amber-100 text-amber-800 border-amber-300' 
-                  : 'bg-clay-empty/50 hover:bg-clay-empty text-walnut-text border-clay-border/40 hover:scale-105'
-              }`}
-              title="Reveal botanical definition hint"
-            >
-              <Lightbulb className="w-4 h-4" />
-              {!gameState.hintUsed && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping" />
-              )}
             </button>
 
             {/* Audio Toggle */}
@@ -831,38 +793,12 @@ export default function App() {
         </div>
       </header>
 
-      {/* Interactive Clue Dropdown */}
-      {hintDrawerOpen && (
-        <div className="bg-amber-50 dark:bg-amber-950/20 border-b border-amber-200 dark:border-amber-900/40 py-3.5 px-4 animate-fade-in-up">
-          <div className="max-w-md mx-auto flex gap-3 items-start">
-            <BookOpen className="w-5 h-5 text-amber-700 dark:text-amber-500 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-800 dark:text-amber-400">
-                Linguistic Riddle Clue
-              </span>
-              <p className="font-serif italic text-sm text-walnut-text/90 leading-relaxed mt-1">
-                "{getObscuredDefinition()}"
-              </p>
-              <span className="text-[10px] font-mono text-amber-700/80 dark:text-amber-500/80 block mt-1.5 uppercase font-medium">
-                Part of Speech: {gameState.partOfSpeech}
-              </span>
-            </div>
-            <button 
-              onClick={() => setHintDrawerOpen(false)}
-              className="text-amber-800/60 hover:text-amber-900 hover:bg-amber-100 dark:hover:bg-amber-950/40 p-1 rounded-md cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Main Gameplay Screen Area */}
-      <main className="flex-1 flex flex-col justify-center items-center py-4 px-2">
-        <div className="w-full max-w-lg flex flex-col justify-center h-full">
+      <main className="flex-1 min-h-0 flex flex-col justify-between items-center py-1.5 sm:py-2 px-2 overflow-hidden">
+        <div className="w-full max-w-lg flex flex-col justify-between h-full min-h-0">
           
           {/* Mode Selector Tab Bar */}
-          <div className="flex justify-center mb-4 shrink-0">
+          <div className="flex justify-center mb-1.5 sm:mb-2 shrink-0">
             <div className="bg-linen-card/65 p-1 rounded-xl border border-clay-border/40 flex gap-1">
               <button
                 onClick={() => handleSetMode(false)}
@@ -890,7 +826,7 @@ export default function App() {
 
           {isDailyMode ? (
             /* Daily Challenge Date Panel */
-            <div className="flex items-center justify-between px-4 py-2.5 mb-5 bg-linen-card/65 border border-clay-border/40 rounded-2xl shrink-0 max-w-sm mx-auto w-full animate-fade-in-up">
+            <div className="flex items-center justify-between px-4 py-2 mb-1.5 sm:mb-2 bg-linen-card/65 border border-clay-border/40 rounded-2xl shrink-0 max-w-sm mx-auto w-full animate-fade-in-up">
               <div className="flex flex-col">
                 <span className="text-[9px] font-mono font-extrabold uppercase tracking-wider text-walnut-muted">
                   Today's Challenge
@@ -911,7 +847,7 @@ export default function App() {
             </div>
           ) : (
             /* Quick Word Length Selector & Level Browser */
-            <div className="flex items-center justify-between px-2 mb-5 bg-linen-card/65 border border-clay-border/40 p-2 rounded-2xl shrink-0 max-w-sm mx-auto w-full animate-fade-in-up">
+            <div className="flex items-center justify-between px-2 mb-1.5 sm:mb-2 bg-linen-card/65 border border-clay-border/40 p-1 sm:p-1.5 rounded-2xl shrink-0 max-w-sm mx-auto w-full animate-fade-in-up">
               <span className="text-[10px] font-mono font-bold tracking-wider text-walnut-muted uppercase pl-2">
                 Length:
               </span>
@@ -949,7 +885,7 @@ export default function App() {
 
           {/* Celebratory Banner */}
           {isDailyMode && isTodaySolved && (
-            <div className="bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-3 text-center mb-4 animate-fade-in-up">
+            <div className="bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-1.5 sm:p-2.5 text-center mb-1.5 sm:mb-2 shrink-0 animate-fade-in-up">
               <span className="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
                 🎉 You Solved Today's Puzzle!
               </span>
@@ -959,15 +895,17 @@ export default function App() {
             </div>
           )}
 
-          {/* Earthy Board Grid */}
-          <GameBoard
-            guesses={gameState.guesses}
-            currentGuess={gameState.currentGuess}
-            wordLength={gameState.wordLength}
-            targetWord={gameState.targetWord}
-            gameStatus={gameState.gameStatus}
-            errorShakeRowIndex={gameState.errorShakeRowIndex}
-          />
+          {/* Earthy Board Grid Container */}
+          <div className="flex-1 min-h-0 flex items-center justify-center py-1 sm:py-2 overflow-hidden">
+            <GameBoard
+              guesses={gameState.guesses}
+              currentGuess={gameState.currentGuess}
+              wordLength={gameState.wordLength}
+              targetWord={gameState.targetWord}
+              gameStatus={gameState.gameStatus}
+              errorShakeRowIndex={gameState.errorShakeRowIndex}
+            />
+          </div>
 
           {/* Definition Reveal Panel */}
           {gameState.showDefinition && (
@@ -979,9 +917,9 @@ export default function App() {
               gameStatus={gameState.gameStatus === 'WON' ? 'WON' : 'LOST'}
               levelNumber={gameState.levelNumber}
               onNextLevel={handleNextLevel}
-              hintUsed={gameState.hintUsed}
               isDaily={isDailyMode}
               onBackToAdventure={handleBackToAdventure}
+              onClose={() => setGameState(prev => ({ ...prev, showDefinition: false }))}
             />
           )}
 
@@ -989,8 +927,8 @@ export default function App() {
       </main>
 
       {/* Virtual Tactile QWERTY Keyboard */}
-      <footer className="bg-linen-card/35 border-t border-clay-border/30 pt-3 pb-6 px-2 shrink-0">
-        <div className="max-w-lg mx-auto flex flex-col gap-3">
+      <footer className="bg-linen-card/35 border-t border-clay-border/30 pt-1.5 pb-2.5 sm:pb-3.5 px-2 shrink-0">
+        <div className="max-w-lg mx-auto flex flex-col gap-1.5 sm:gap-2">
           
           {/* Static Offline Indicator and Progress Bar */}
           <div className="flex items-center justify-between text-[11px] font-semibold text-walnut-muted px-2">
@@ -1002,6 +940,16 @@ export default function App() {
               Progression: {Math.round((levelNumber / 10000) * 100)}% ({levelNumber}/10000)
             </div>
           </div>
+
+          {/* Reopen Definition Modal trigger button */}
+          {gameState.gameStatus !== 'IN_PROGRESS' && !gameState.showDefinition && (
+            <button
+              onClick={() => { soundEngine.playReveal(); setGameState(prev => ({ ...prev, showDefinition: true })); }}
+              className="w-full py-1.5 sm:py-2 px-4 bg-moss-correct text-linen-bg hover:bg-moss-correct/90 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer animate-pulse"
+            >
+              🏆 View Level Definition & Next Steps
+            </button>
+          )}
 
           <VirtualKeyboard
             onChar={handleCharInput}
@@ -1142,17 +1090,6 @@ export default function App() {
                 </ul>
                 <p className="text-xs text-walnut-muted">
                   The game is smart enough to only light up the exact number of letters present in the secret word, ensuring you don't chase ghosts!
-                </p>
-              </div>
-
-              {/* 6. Definitions & Hints */}
-              <div className="bg-linen-card/50 rounded-xl p-3 border border-clay-border/40">
-                <span className="text-xs font-bold uppercase text-amber-800 flex items-center gap-1 mb-1">
-                  <Lightbulb className="w-3.5 h-3.5" />
-                  Riddle hints
-                </span>
-                <p className="text-xs text-walnut-muted">
-                  Stuck? Use the <strong>bulb button</strong> to reveal the dictionary definition of the word. The target word is censored inside the clue to preserve structural complexity!
                 </p>
               </div>
 
