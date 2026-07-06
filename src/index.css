@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --color-linen-bg: #F5F2EB;      /* Warm Linen Canvas background */
+  --color-linen-card: #FAF7F2;    /* Soft Alabaster Card background */
+  --color-clay-empty: #E6E0D4;    /* Default unused / empty tile base */
+  --color-clay-border: #D2C9B9;   /* Subtle tile borders */
+  --color-moss-correct: #8FA88B;  /* Desaturated Sage / Moss Green */
+  --color-ochre-present: #D4A373; /* Ochre / Soft Terracotta */
+  --color-ash-absent: #BCB4A6;    /* Warm Ash / Pebble Grey */
+  --color-ash-dark: #8C8275;      /* Dark ash for disabled keys */
+  --color-walnut-text: #3D352E;   /* Smoked Walnut / Charcoal Umber */
+  --color-walnut-muted: #7A6F62;  /* Soft secondary text */
+}
+
+/* Elegant Slate Grayish Dark Theme */
+.dark {
+  --color-linen-bg: #1E2022;      /* Charcoal Gray Canvas */
+  --color-linen-card: #282A2D;    /* Sleek Slate Gray Card */
+  --color-clay-empty: #34373C;    /* Muted Slate Tile Fill */
+  --color-clay-border: #444950;   /* High Contrast Frame Border */
+  --color-moss-correct: #627F6A;  /* Desaturated Moss Green for Dark */
+  --color-ochre-present: #C49568; /* Rich Sand Present Accent */
+  --color-ash-absent: #54585F;    /* Soft Dark Ash absent */
+  --color-ash-dark: #2B2E32;      /* Keyboard key backing in dark mode */
+  --color-walnut-text: #E5E8EC;   /* Off-white readable text */
+  --color-walnut-muted: #9AA0A6;  /* Silver-gray secondary label */
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Clean Minimalism Color Palette Theme Tokens */
+  --color-linen-bg: var(--color-linen-bg);
+  --color-linen-card: var(--color-linen-card);
+  --color-clay-empty: var(--color-clay-empty);
+  --color-clay-border: var(--color-clay-border);
+  --color-moss-correct: var(--color-moss-correct);
+  --color-ochre-present: var(--color-ochre-present);
+  --color-ash-absent: var(--color-ash-absent);
+  --color-ash-dark: var(--color-ash-dark);
+  --color-walnut-text: var(--color-walnut-text);
+  --color-walnut-muted: var(--color-walnut-muted);
+
+  /* Custom Animations for Wordle Tactics */
+  --animate-shake: shake 0.4s ease-in-out;
+  --animate-pop: pop 0.12s ease-out;
+  --animate-flip-correct: flip-correct 0.6s ease-in-out forwards;
+  --animate-flip-present: flip-present 0.6s ease-in-out forwards;
+  --animate-flip-absent: flip-absent 0.6s ease-in-out forwards;
+  --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-6px); }
+  30%, 60%, 90% { transform: translateX(6px); }
+}
+
+@keyframes pop {
+  0% { transform: scale(0.92); opacity: 0.8; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Three distinct flips to trigger at staggered intervals during evaluation */
+@keyframes flip-correct {
+  0% { transform: rotateX(0deg); background-color: transparent; }
+  45% { transform: rotateX(90deg); background-color: transparent; }
+  55% { transform: rotateX(90deg); background-color: var(--color-moss-correct); border-color: var(--color-moss-correct); color: #FAF7F2; }
+  100% { transform: rotateX(0deg); background-color: var(--color-moss-correct); border-color: var(--color-moss-correct); color: #FAF7F2; }
+}
+
+@keyframes flip-present {
+  0% { transform: rotateX(0deg); background-color: transparent; }
+  45% { transform: rotateX(90deg); background-color: transparent; }
+  55% { transform: rotateX(90deg); background-color: var(--color-ochre-present); border-color: var(--color-ochre-present); color: #FAF7F2; }
+  100% { transform: rotateX(0deg); background-color: var(--color-ochre-present); border-color: var(--color-ochre-present); color: #FAF7F2; }
+}
+
+@keyframes flip-absent {
+  0% { transform: rotateX(0deg); background-color: transparent; }
+  45% { transform: rotateX(90deg); background-color: transparent; }
+  55% { transform: rotateX(90deg); background-color: var(--color-ash-absent); border-color: var(--color-ash-absent); color: #FAF7F2; }
+  100% { transform: rotateX(0deg); background-color: var(--color-ash-absent); border-color: var(--color-ash-absent); color: #FAF7F2; }
+}
+
+@keyframes fade-in-up {
+  0% { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Custom scrollbars for stats or hint scroll elements */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF7F2;
+}
+::-webkit-scrollbar-thumb {
+  background: #D2C9B9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8C8275;
+}
+
+body {
+  background-color: var(--color-linen-bg);
+  color: var(--color-walnut-text);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}

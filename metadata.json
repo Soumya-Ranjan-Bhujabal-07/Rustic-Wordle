@@ -1,0 +1,6 @@
+{
+  "name": "Rustic Wordle Progression",
+  "description": "An earthy-toned Wordle adaptation with 10,000+ progressive difficulty levels, a built-in dictionary with definitions, and offline gameplay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
