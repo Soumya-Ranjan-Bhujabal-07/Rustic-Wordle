@@ -34,6 +34,7 @@ import LevelSelectorModal from './components/LevelSelectorModal';
 import DefinitionReveal from './components/DefinitionReveal';
 import EarthyConfetti from './components/EarthyConfetti';
 import HintModal from './components/HintModal';
+import { RusticLogo } from './components/RusticLogo';
 import { VALID_GUESS_SET_BY_LENGTH } from './data/vocabulary';
 
 // Daily Puzzle helpers
@@ -805,28 +806,27 @@ export default function App() {
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           
           {/* Brand Logo & Level Track */}
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-wider text-moss-correct font-sans uppercase">
-                {isDailyMode ? "Daily Rustic Puzzle" : "Rustic Wordle"}
-              </span>
-              <span className="text-[10px] font-mono font-bold tracking-widest text-walnut-muted uppercase flex items-center gap-1.5">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <RusticLogo showSignature={false} size="sm" />
+            <div className="h-6 w-[1px] bg-clay-border/30 hidden xs:block" />
+            <div className="flex flex-col justify-center">
+              <span className="text-[9px] sm:text-[10px] font-mono font-extrabold tracking-wider text-walnut-muted uppercase flex items-center gap-1">
                 {isDailyMode ? (
                   <>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    Today's Word • {gameState.wordLength} Letters
+                    Daily • {gameState.wordLength}L
                   </>
                 ) : (
                   <>
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-moss-correct animate-pulse" />
-                    Level {displayLevel} • {gameState.wordLength} Letters
+                    Level {displayLevel} • {gameState.wordLength}L
                   </>
                 )}
               </span>
             </div>
             {isDailyMode && isTodaySolved && (
-              <span className="hidden sm:flex bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest animate-bounce">
-                🎉 Today's Solved
+              <span className="hidden md:flex bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest animate-bounce">
+                🎉 Solved
               </span>
             )}
           </div>
@@ -1121,6 +1121,16 @@ export default function App() {
             onEnter={handleEnterInput}
             keyStatuses={keyStatuses}
           />
+
+          {/* Clean, Non-Obstructive Developer Signature at the bottom */}
+          <div className="text-center mt-1 sm:mt-1.5 pt-1 border-t border-clay-border/10">
+            <span className="text-[10px] sm:text-xs font-serif italic text-walnut-muted/70 tracking-wide select-none">
+              made with care by{' '}
+              <span className="font-sans font-extrabold not-italic tracking-wider text-moss-correct uppercase hover:text-ochre-present transition-colors duration-300">
+                Soumya Ranjan Bhujabal
+              </span>
+            </span>
+          </div>
         </div>
       </footer>
 
@@ -1257,6 +1267,11 @@ export default function App() {
                 </p>
               </div>
 
+              {/* Developer Signature & Logo */}
+              <div className="pt-4 mt-6 border-t border-clay-border/35 flex flex-col items-center justify-center">
+                <RusticLogo showSignature={true} size="md" />
+              </div>
+
             </div>
 
             {/* Modal footer button */}
@@ -1355,9 +1370,14 @@ export default function App() {
               </div>
             </div>
 
+            {/* Developer Signature & Logo */}
+            <div className="pt-3 mt-4 border-t border-clay-border/30 flex flex-col items-center justify-center">
+              <RusticLogo showSignature={true} size="md" />
+            </div>
+
             <button
               onClick={() => { soundEngine.playTick(); setShowSettings(false); }}
-              className="w-full mt-6 py-2.5 font-semibold text-sm rounded-xl bg-walnut-text text-linen-bg hover:bg-walnut-text/90 shadow-sm transition-all cursor-pointer"
+              className="w-full mt-4 py-2.5 font-semibold text-sm rounded-xl bg-walnut-text text-linen-bg hover:bg-walnut-text/90 shadow-sm transition-all cursor-pointer"
             >
               Apply Config
             </button>
